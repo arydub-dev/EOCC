@@ -1,0 +1,101 @@
+# EOCC — hardened multi-service deployment.
+#
+# Tiers are separated: only the reverse proxy is published. The database is on an
+# internal network with no host port. Containers run with no-new-privileges and,
+# where possible, read-only root filesystems. Copy .env.example to .env and set
+# strong secrets before deploying.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: eocc-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-eocc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-eocc}
+    volumes:
+      - eocc_pgdata:/var/lib/postgresql/data
+    networks:
+      - backend_net
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eocc} -d ${POSTGRES_DB:-eocc}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No host port: the database is only reachable inside backend_net.
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eocc-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-eocc}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-eocc}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-14}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost}
+      SEED_ON_STARTUP: ${SEED_ON_STARTUP:-true}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+    networks:
+      - backend_net
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    # Not published to the host; reachable only via the proxy.
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: eocc-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/v1}
+    networks:
+      - backend_net
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: eocc-proxy
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "${PROXY_PORT:-80}:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - backend_net
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  backend_net:
+    driver: bridge
+
+volumes:
+  eocc_pgdata:
