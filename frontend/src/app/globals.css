@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-bg text-ink antialiased;
+  background-image:
+    radial-gradient(900px 500px at 12% -5%, rgba(59, 130, 246, 0.08), transparent),
+    radial-gradient(800px 500px at 100% 0%, rgba(16, 185, 129, 0.05), transparent);
+  background-attachment: fixed;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: #243044;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer components {
+  .panel {
+    @apply rounded-xl border border-line bg-bg-panel shadow-panel;
+  }
+  .panel-soft {
+    @apply rounded-xl border border-line bg-bg-soft;
+  }
+  .stat-label {
+    @apply text-[11px] font-medium uppercase tracking-wider text-ink-faint;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium;
+  }
+  .nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-bg-elevated hover:text-ink;
+  }
+  .nav-item-active {
+    @apply bg-bg-elevated text-ink shadow-[inset_2px_0_0_0_theme(colors.accent.DEFAULT)];
+  }
+  .input {
+    @apply w-full rounded-lg border border-line bg-bg-soft px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white hover:bg-accent-soft;
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-bg-soft text-ink-muted hover:text-ink hover:border-ink-faint;
+  }
+  .btn-lg {
+    @apply rounded-xl px-5 py-3 text-sm font-semibold;
+  }
+  .glass {
+    @apply border border-white/5 bg-white/[0.03] backdrop-blur-xl;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-glow;
+  }
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-line bg-bg-soft px-3 py-1 text-xs font-medium text-ink-muted;
+  }
+  .gradient-text {
+    @apply bg-gradient-to-r from-white via-ink to-ink-muted bg-clip-text text-transparent;
+  }
+  .section {
+    @apply mx-auto w-full max-w-6xl px-6;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-accent;
+  }
+}
+
+/* Marketing surface: layered radial gradients + grid */
+.marketing-bg {
+  background-color: #070a11;
+  background-image:
+    radial-gradient(1000px 600px at 15% -10%, rgba(59, 130, 246, 0.12), transparent),
+    radial-gradient(900px 600px at 100% 0%, rgba(16, 185, 129, 0.07), transparent),
+    radial-gradient(700px 500px at 50% 110%, rgba(99, 102, 241, 0.08), transparent);
+}
+.grid-overlay {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-floaty { animation: floaty 6s ease-in-out infinite; }
+.animate-fadeUp { animation: fadeUp 0.6s ease-out both; }
+.skeleton {
+  background: linear-gradient(90deg, #16202f 25%, #1b283b 37%, #16202f 63%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* Leaflet dark theme tweaks */
+.leaflet-container {
+  background: #0a0e16;
+  font-family: var(--font-sans);
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #16202f;
+  color: #e6edf6;
+  border: 1px solid #1f2a3a;
+}
+.leaflet-bar a {
+  background: #121a28;
+  color: #e6edf6;
+  border-color: #1f2a3a;
+}
+.leaflet-bar a:hover {
+  background: #16202f;
+}
