@@ -4,4 +4,4 @@
 ruff==0.6.9
 
 # Testing (httpx is already pinned in requirements.txt and powers TestClient)
-pytest==8.3.3
+pytest==9.1.1
