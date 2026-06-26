@@ -47,9 +47,9 @@ export default function LoginPage() {
       subtitle="Welcome back to your operations command center."
       footer={
         <>
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-accent hover:underline">
-            Create one
+          Want EOCC for your organization?{" "}
+          <Link href="/contact" className="font-medium text-accent hover:underline">
+            Connect with us
           </Link>
         </>
       }

@@ -36,6 +36,33 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Turn a backend error `detail` into a human-readable message. FastAPI returns
+ * validation errors as an array of `{ msg, loc }` objects; surfacing the raw JSON
+ * is confusing, so we join the messages into a single readable sentence.
+ */
+function formatErrorDetail(detail: unknown): string {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) =>
+        item && typeof item === "object" && "msg" in item
+          ? String((item as { msg: unknown }).msg)
+          : null,
+      )
+      .filter((m): m is string => Boolean(m));
+    if (messages.length) return messages.join(". ");
+  }
+  if (detail && typeof detail === "object" && "msg" in detail) {
+    return String((detail as { msg: unknown }).msg);
+  }
+  try {
+    return JSON.stringify(detail);
+  } catch {
+    return "Request failed";
+  }
+}
+
 interface RequestOptions {
   method?: string;
   body?: unknown;
@@ -124,7 +151,7 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
     let detail = res.statusText;
     try {
       const data = await res.json();
-      detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+      detail = formatErrorDetail(data?.detail ?? data);
     } catch {
       /* ignore */
     }
