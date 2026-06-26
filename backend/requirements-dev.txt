@@ -1,7 +1,7 @@
 -r requirements.txt
 
 # Linting & formatting
-ruff==0.6.9
+ruff==0.15.20
 
 # Testing (httpx is already pinned in requirements.txt and powers TestClient)
 pytest==8.3.3
