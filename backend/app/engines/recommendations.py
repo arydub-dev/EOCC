@@ -3,6 +3,7 @@
 Translates the operational snapshot into a prioritized, explainable action
 list and a narrative situation report (SITREP).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

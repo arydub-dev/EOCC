@@ -8,10 +8,11 @@ Security model:
   the cookie and treat the body value as optional.
 - Optional TOTP MFA. Authorization is permission-based and enforced server-side.
 """
+
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -93,7 +94,7 @@ def _issue_token(
     remember_me: bool = False,
 ) -> Token:
     ip = client_ip(request)
-    user.last_login_at = datetime.now(timezone.utc)
+    user.last_login_at = datetime.now(UTC)
     user.last_login_ip = ip
     user.failed_login_count = 0
     user.locked_until = None
@@ -129,15 +130,15 @@ def _is_locked(user: User) -> bool:
         return False
     locked = user.locked_until
     if locked.tzinfo is None:
-        locked = locked.replace(tzinfo=timezone.utc)
-    return locked > datetime.now(timezone.utc)
+        locked = locked.replace(tzinfo=UTC)
+    return locked > datetime.now(UTC)
 
 
 def _register_failure(db: Session, user: User) -> None:
     user.failed_login_count = (user.failed_login_count or 0) + 1
-    user.last_failed_login_at = datetime.now(timezone.utc)
+    user.last_failed_login_at = datetime.now(UTC)
     if user.failed_login_count >= settings.MAX_FAILED_LOGINS:
-        user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=settings.LOCKOUT_MINUTES)
+        user.locked_until = datetime.now(UTC) + timedelta(minutes=settings.LOCKOUT_MINUTES)
     db.commit()
 
 
@@ -156,7 +157,13 @@ def _authenticate(
     if user is None:
         # Still spend time-ish; record attempt without leaking existence.
         session_service.record_login_attempt(
-            db, email=email, user=None, successful=False, reason="unknown_user", ip=ip, user_agent=ua
+            db,
+            email=email,
+            user=None,
+            successful=False,
+            reason="unknown_user",
+            ip=ip,
+            user_agent=ua,
         )
         raise generic
 
@@ -171,8 +178,12 @@ def _authenticate(
             db, email=email, user=user, successful=False, reason="locked", ip=ip, user_agent=ua
         )
         audit_service.log(
-            db, actor=user, action="login_blocked_locked", category="security",
-            entity_type="user", entity_id=user.id,
+            db,
+            actor=user,
+            action="login_blocked_locked",
+            category="security",
+            entity_type="user",
+            entity_id=user.id,
         )
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
@@ -182,11 +193,21 @@ def _authenticate(
     if not verify_password(password, user.hashed_password):
         _register_failure(db, user)
         session_service.record_login_attempt(
-            db, email=email, user=user, successful=False, reason="bad_password", ip=ip, user_agent=ua
+            db,
+            email=email,
+            user=user,
+            successful=False,
+            reason="bad_password",
+            ip=ip,
+            user_agent=ua,
         )
         audit_service.log(
-            db, actor=user, action="login_failed", category="security",
-            entity_type="user", entity_id=user.id,
+            db,
+            actor=user,
+            action="login_failed",
+            category="security",
+            entity_type="user",
+            entity_id=user.id,
         )
         raise generic
 
@@ -194,7 +215,13 @@ def _authenticate(
         secret = decrypt_value(user.mfa_secret_encrypted)
         if not mfa_code or not secret or not verify_totp(secret, mfa_code):
             session_service.record_login_attempt(
-                db, email=email, user=user, successful=False, reason="mfa_failed", ip=ip, user_agent=ua
+                db,
+                email=email,
+                user=user,
+                successful=False,
+                reason="mfa_failed",
+                ip=ip,
+                user_agent=ua,
             )
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Valid MFA code required")
 
@@ -250,14 +277,19 @@ def register(
         hashed_password=hash_password(payload.password),
         is_active=True,
         is_verified=False,
-        password_changed_at=datetime.now(timezone.utc),
+        password_changed_at=datetime.now(UTC),
         email_verification_token=secrets.token_urlsafe(24),
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     audit_service.log(
-        db, actor=user, action="register", category="security", entity_type="user", entity_id=user.id
+        db,
+        actor=user,
+        action="register",
+        category="security",
+        entity_type="user",
+        entity_id=user.id,
     )
     return _issue_token(db, user, request, response)
 
@@ -321,8 +353,13 @@ def logout_all(
     count = session_service.revoke_all(db, user)
     _clear_refresh_cookie(response)
     audit_service.log(
-        db, actor=user, action="logout_all", category="security",
-        entity_type="user", entity_id=user.id, detail={"revoked": count},
+        db,
+        actor=user,
+        action="logout_all",
+        category="security",
+        entity_type="user",
+        entity_id=user.id,
+        detail={"revoked": count},
     )
     return Message(detail=f"Revoked {count} session(s)")
 
@@ -341,15 +378,21 @@ def revoke_my_session(
     if not session_service.revoke_session(db, session_id, user):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found")
     audit_service.log(
-        db, actor=user, action="revoke_session", category="security",
-        entity_type="session", entity_id=session_id,
+        db,
+        actor=user,
+        action="revoke_session",
+        category="security",
+        entity_type="session",
+        entity_id=session_id,
     )
     return Message(detail="Session revoked")
 
 
 # ── MFA (TOTP) ──
 @router.post("/mfa/setup", response_model=MFASetupResponse)
-def mfa_setup(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> MFASetupResponse:
+def mfa_setup(
+    db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> MFASetupResponse:
     """Begin TOTP enrollment — returns a secret + otpauth URI (confirm to enable)."""
     secret = generate_totp_secret()
     user.mfa_secret_encrypted = encrypt_value(secret)
@@ -367,7 +410,12 @@ def mfa_enable(
     user.mfa_enabled = True
     db.commit()
     audit_service.log(
-        db, actor=user, action="mfa_enabled", category="security", entity_type="user", entity_id=user.id
+        db,
+        actor=user,
+        action="mfa_enabled",
+        category="security",
+        entity_type="user",
+        entity_id=user.id,
     )
     return Message(detail="MFA enabled")
 
@@ -383,25 +431,36 @@ def mfa_disable(
     user.mfa_secret_encrypted = None
     db.commit()
     audit_service.log(
-        db, actor=user, action="mfa_disabled", category="security", entity_type="user", entity_id=user.id
+        db,
+        actor=user,
+        action="mfa_disabled",
+        category="security",
+        entity_type="user",
+        entity_id=user.id,
     )
     return Message(detail="MFA disabled")
 
 
 @router.post("/change-password", response_model=Message)
 def change_password(
-    payload: PasswordChangeRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+    payload: PasswordChangeRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> Message:
     if not verify_password(payload.current_password, user.hashed_password):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
     user.hashed_password = hash_password(payload.new_password)
-    user.password_changed_at = datetime.now(timezone.utc)
+    user.password_changed_at = datetime.now(UTC)
     db.commit()
     # Revoke other sessions after a credential change.
     session_service.revoke_all(db, user, reason="password_changed")
     audit_service.log(
-        db, actor=user, action="change_password", category="security",
-        entity_type="user", entity_id=user.id,
+        db,
+        actor=user,
+        action="change_password",
+        category="security",
+        entity_type="user",
+        entity_id=user.id,
     )
     return Message(detail="Password updated; other sessions signed out")
 
@@ -432,17 +491,23 @@ def resend_verification(
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)
-def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)) -> ForgotPasswordResponse:
+def forgot_password(
+    payload: ForgotPasswordRequest, db: Session = Depends(get_db)
+) -> ForgotPasswordResponse:
     """Mock password-reset request. Returns the reset token directly (no email)."""
     user = db.scalar(select(User).where(User.email == payload.email.lower()))
     token = secrets.token_urlsafe(24)
     if user:
         user.password_reset_token = token
-        user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        user.password_reset_expires = datetime.now(UTC) + timedelta(hours=1)
         db.commit()
         audit_service.log(
-            db, actor=user, action="password_reset_requested", category="security",
-            entity_type="user", entity_id=user.id,
+            db,
+            actor=user,
+            action="password_reset_requested",
+            category="security",
+            entity_type="user",
+            entity_id=user.id,
         )
     # Always return success-shaped response to avoid account enumeration.
     return ForgotPasswordResponse(
@@ -458,11 +523,11 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired reset token")
     expires = user.password_reset_expires
     if expires.tzinfo is None:
-        expires = expires.replace(tzinfo=timezone.utc)
-    if expires < datetime.now(timezone.utc):
+        expires = expires.replace(tzinfo=UTC)
+    if expires < datetime.now(UTC):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Reset token has expired")
     user.hashed_password = hash_password(payload.new_password)
-    user.password_changed_at = datetime.now(timezone.utc)
+    user.password_changed_at = datetime.now(UTC)
     user.password_reset_token = None
     user.password_reset_expires = None
     user.failed_login_count = 0
@@ -470,8 +535,12 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
     db.commit()
     session_service.revoke_all(db, user, reason="password_reset")
     audit_service.log(
-        db, actor=user, action="reset_password", category="security",
-        entity_type="user", entity_id=user.id,
+        db,
+        actor=user,
+        action="reset_password",
+        category="security",
+        entity_type="user",
+        entity_id=user.id,
     )
     return Message(detail="Password updated successfully")
 
@@ -512,15 +581,20 @@ def create_user(
         organization=org.name if org else payload.organization,
         hashed_password=hash_password(payload.password),
         is_verified=True,
-        password_changed_at=datetime.now(timezone.utc),
+        password_changed_at=datetime.now(UTC),
         created_by_id=admin.id,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     audit_service.log(
-        db, actor=admin, action="create_user", category="user_management",
-        entity_type="user", entity_id=user.id, new_value={"email": user.email, "role": user.role.value},
+        db,
+        actor=admin,
+        action="create_user",
+        category="user_management",
+        entity_type="user",
+        entity_id=user.id,
+        new_value={"email": user.email, "role": user.role.value},
     )
     return user
 
@@ -544,7 +618,7 @@ def update_user(
     data = payload.model_dump(exclude_unset=True)
     if data.get("password"):
         user.hashed_password = hash_password(data.pop("password"))
-        user.password_changed_at = datetime.now(timezone.utc)
+        user.password_changed_at = datetime.now(UTC)
     else:
         data.pop("password", None)
     for key, value in data.items():
@@ -554,8 +628,14 @@ def update_user(
     db.refresh(user)
     after = {"role": user.role.value, "is_active": user.is_active, "full_name": user.full_name}
     audit_service.log(
-        db, actor=admin, action="update_user", category="user_management",
-        entity_type="user", entity_id=user.id, old_value=before, new_value=after,
+        db,
+        actor=admin,
+        action="update_user",
+        category="user_management",
+        entity_type="user",
+        entity_id=user.id,
+        old_value=before,
+        new_value=after,
     )
     return user
 
@@ -572,7 +652,11 @@ def deactivate_user(
     db.commit()
     session_service.revoke_all(db, user, reason="deactivated")
     audit_service.log(
-        db, actor=admin, action="deactivate_user", category="user_management",
-        entity_type="user", entity_id=user.id,
+        db,
+        actor=admin,
+        action="deactivate_user",
+        category="user_management",
+        entity_type="user",
+        entity_id=user.id,
     )
     return Message(detail="User deactivated")

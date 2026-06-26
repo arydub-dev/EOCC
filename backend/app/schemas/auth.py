@@ -1,4 +1,5 @@
 """Authentication and user schemas."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -82,7 +83,7 @@ class Token(BaseModel):
     refresh_token: str | None = None
     token_type: str = "bearer"
     expires_in: int = 0  # access-token lifetime in seconds
-    user: "UserOut"
+    user: UserOut
     permissions: list[str] = []
     needs_onboarding: bool = False
     organization: OrganizationOut | None = None

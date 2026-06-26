@@ -3,9 +3,10 @@
 This is the single source of truth aggregation used by Mission Control, Risk
 Intelligence, the Copilot, the Briefing Center and the Simulation Center.
 """
+
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.engines import scoring
@@ -86,13 +87,17 @@ def build_snapshot(db: Session) -> OperationalSnapshot:
                 region=h.region,
                 stress_score=h.stress_score,
                 status=h.status.value,
-                icu_occupancy_pct=round((h.icu_occupied / h.icu_beds * 100) if h.icu_beds else 0, 1),
+                icu_occupancy_pct=round(
+                    (h.icu_occupied / h.icu_beds * 100) if h.icu_beds else 0, 1
+                ),
             )
         )
     snap.avg_hospital_stress = round(stress_sum / len(hospitals), 1) if hospitals else 0.0
     snap.hospital_capacity_pct = round((occ_beds / total_beds * 100) if total_beds else 0, 1)
     snap.icu_occupancy_pct = round((icu_occ / icu_beds * 100) if icu_beds else 0, 1)
-    snap.top_stressed_hospitals = sorted(hosp_items, key=lambda x: x.stress_score, reverse=True)[:10]
+    snap.top_stressed_hospitals = sorted(hosp_items, key=lambda x: x.stress_score, reverse=True)[
+        :10
+    ]
 
     # ── Shelters ──
     shelters = list(db.scalars(select(Shelter)).all())
@@ -122,7 +127,9 @@ def build_snapshot(db: Session) -> OperationalSnapshot:
         )
     snap.shelter_utilization_pct = round((occ_sum / cap_sum * 100) if cap_sum else 0, 1)
     snap.avg_shelter_strain = round(strain_sum / len(shelters), 1) if shelters else 0.0
-    snap.top_strained_shelters = sorted(shelter_items, key=lambda x: x.utilization_score, reverse=True)[:10]
+    snap.top_strained_shelters = sorted(
+        shelter_items, key=lambda x: x.utilization_score, reverse=True
+    )[:10]
 
     # ── Resources ──
     resources = list(db.scalars(select(Resource)).all())
@@ -149,7 +156,9 @@ def build_snapshot(db: Session) -> OperationalSnapshot:
         if r.region:
             regions.add(r.region)
     for name, bucket in by_type.items():
-        bucket["readiness_avg"] = round(bucket["readiness_sum"] / bucket["total"], 1) if bucket["total"] else 0
+        bucket["readiness_avg"] = (
+            round(bucket["readiness_sum"] / bucket["total"], 1) if bucket["total"] else 0
+        )
         avail_pct = (bucket["available"] / bucket["total"] * 100) if bucket["total"] else 0
         if avail_pct < 15:
             snap.depleted_resource_types.append(name)
@@ -157,7 +166,9 @@ def build_snapshot(db: Session) -> OperationalSnapshot:
     snap.resource_availability_pct = round(
         (snap.resource_available / snap.resource_total * 100) if snap.resource_total else 0, 1
     )
-    snap.resource_readiness_pct = round(readiness_sum / snap.resource_total, 1) if snap.resource_total else 0.0
+    snap.resource_readiness_pct = (
+        round(readiness_sum / snap.resource_total, 1) if snap.resource_total else 0.0
+    )
     readiness_result = scoring.resource_readiness(
         total=snap.resource_total,
         available=snap.resource_available,
@@ -169,25 +180,29 @@ def build_snapshot(db: Session) -> OperationalSnapshot:
     # ── Utilities ──
     outages = list(
         db.scalars(
-            select(UtilityOutage).where(
-                UtilityOutage.status != enums.UtilityOutageStatus.RESTORED
-            )
+            select(UtilityOutage).where(UtilityOutage.status != enums.UtilityOutageStatus.RESTORED)
         ).all()
     )
     snap.utility_outages_active = len(outages)
     for o in outages:
         snap.customers_without_service += o.customers_affected
-        snap.utility_by_type[o.utility_type.value] = snap.utility_by_type.get(o.utility_type.value, 0) + 1
+        snap.utility_by_type[o.utility_type.value] = (
+            snap.utility_by_type.get(o.utility_type.value, 0) + 1
+        )
         if o.region:
             regions.add(o.region)
 
     # ── Alerts ──
-    open_alerts = list(db.scalars(select(Alert).where(Alert.status != enums.AlertStatus.RESOLVED)).all())
+    open_alerts = list(
+        db.scalars(select(Alert).where(Alert.status != enums.AlertStatus.RESOLVED)).all()
+    )
     snap.open_alerts = len(open_alerts)
     for a in open_alerts:
         if a.severity in (enums.AlertSeverity.CRITICAL, enums.AlertSeverity.EMERGENCY):
             snap.critical_alerts += 1
-        snap.alerts_by_category[a.category.value] = snap.alerts_by_category.get(a.category.value, 0) + 1
+        snap.alerts_by_category[a.category.value] = (
+            snap.alerts_by_category.get(a.category.value, 0) + 1
+        )
 
     # ── Composite health ──
     health = scoring.overall_health(

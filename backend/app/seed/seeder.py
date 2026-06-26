@@ -4,11 +4,12 @@ Creates a demo organization with four role-based demo users and provisions a
 full synthetic operational workspace for it (via the provisioning service), so
 the platform feels alive immediately after deployment.
 """
+
 from __future__ import annotations
 
 import random
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings

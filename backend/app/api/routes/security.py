@@ -1,5 +1,8 @@
 """Security Center endpoints (Security.View / Security.Manage)."""
+
 from __future__ import annotations
+
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -56,14 +59,18 @@ def revoke_org_session(
     sess = db.get(UserSession, session_id)
     if not sess or sess.organization_id != admin.organization_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found")
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     if sess.revoked_at is None:
-        sess.revoked_at = datetime.now(timezone.utc)
+        sess.revoked_at = datetime.now(UTC)
         sess.revoked_reason = "admin_revoked"
         db.commit()
     audit_service.log(
-        db, actor=admin, action="admin_revoke_session", category="security",
-        entity_type="session", entity_id=session_id,
+        db,
+        actor=admin,
+        action="admin_revoke_session",
+        category="security",
+        entity_type="session",
+        entity_id=session_id,
     )
     return Message(detail="Session revoked")

@@ -4,6 +4,7 @@ Defaults to the deterministic local engine. If an OpenAI API key is configured,
 it augments the deterministic answer with an LLM response grounded in the same
 snapshot context. The platform remains fully functional without OpenAI.
 """
+
 from __future__ import annotations
 
 import json

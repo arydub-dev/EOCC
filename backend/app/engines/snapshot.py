@@ -4,6 +4,7 @@ The analytics service builds this from the database once per request; the risk,
 recommendation, briefing and copilot engines all read from it so that every
 derived artifact is consistent with the same point-in-time picture.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

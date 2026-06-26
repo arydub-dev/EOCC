@@ -59,7 +59,7 @@ export default function SecurityPage() {
             We collect only what is required to operate your workspace. Operational data you import or
             connect remains yours and is isolated to your organization. Demo workspaces contain only
             synthetic data generated for evaluation. We never sell customer data, and you can request
-            export or deletion of your organization's data at any time.
+            export or deletion of your organization&apos;s data at any time.
           </p>
         </div>
       </section>

@@ -7,6 +7,7 @@ Security posture:
 - Encryption keys are derived deterministically from ``SECRET_KEY`` only as a
   development convenience; production deployments must supply explicit keys.
 """
+
 from __future__ import annotations
 
 import base64
@@ -104,7 +105,7 @@ class Settings(BaseSettings):
         return value
 
     @model_validator(mode="after")
-    def _enforce_secure_production(self) -> "Settings":
+    def _enforce_secure_production(self) -> Settings:
         if self.is_production:
             if self.SECRET_KEY == _INSECURE_DEFAULT_SECRET or len(self.SECRET_KEY) < 32:
                 raise ValueError(
@@ -113,11 +114,11 @@ class Settings(BaseSettings):
             if not self.ENCRYPTION_KEY:
                 raise ValueError("ENCRYPTION_KEY must be explicitly set in production.")
             if self.COOKIE_SECURE is False:
-                logger.warning("COOKIE_SECURE is false in production — cookies should be HTTPS-only.")
+                logger.warning(
+                    "COOKIE_SECURE is false in production — cookies should be HTTPS-only."
+                )
         elif self.SECRET_KEY == _INSECURE_DEFAULT_SECRET:
-            logger.warning(
-                "Using the INSECURE default SECRET_KEY — acceptable for local dev only."
-            )
+            logger.warning("Using the INSECURE default SECRET_KEY — acceptable for local dev only.")
         return self
 
     @property
@@ -130,9 +131,10 @@ class Settings(BaseSettings):
 
     @property
     def refresh_secret(self) -> str:
-        return self.REFRESH_TOKEN_SECRET or hashlib.sha256(
-            (self.SECRET_KEY + ":refresh").encode()
-        ).hexdigest()
+        return (
+            self.REFRESH_TOKEN_SECRET
+            or hashlib.sha256((self.SECRET_KEY + ":refresh").encode()).hexdigest()
+        )
 
     @property
     def fernet_key(self) -> bytes:

@@ -3,6 +3,7 @@
 Any attempt to UPDATE or DELETE an ``AuditLog`` or ``LoginAttempt`` raises,
 guaranteeing tamper-evidence regardless of which code path is involved.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import event

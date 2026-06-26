@@ -1,7 +1,9 @@
 """Generic query helpers: pagination, sorting, search, filtering."""
+
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import asc, desc, func, or_, select
 from sqlalchemy.orm import Session
@@ -10,9 +12,11 @@ from sqlalchemy.sql import Select
 from app.schemas.common import PaginationParams
 
 
-def apply_sort(stmt: Select, model: type, sort_by: str | None, sort_dir: str, default: str = "id") -> Select:
+def apply_sort(
+    stmt: Select, model: type, sort_by: str | None, sort_dir: str, default: str = "id"
+) -> Select:
     column_name = sort_by if sort_by and hasattr(model, sort_by) else default
-    column = getattr(model, column_name, getattr(model, "id"))
+    column = getattr(model, column_name, model.id)
     return stmt.order_by(asc(column) if sort_dir == "asc" else desc(column))
 
 

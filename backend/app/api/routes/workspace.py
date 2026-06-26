@@ -1,4 +1,5 @@
 """Onboarding and workspace endpoints (organization provisioning + provenance)."""
+
 from __future__ import annotations
 
 import re
@@ -52,7 +53,9 @@ def _origin_label(origin: str) -> str:
 
 @router.post("/onboarding", response_model=WorkspaceInfo, status_code=status.HTTP_201_CREATED)
 def onboarding(
-    payload: OnboardingRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+    payload: OnboardingRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> WorkspaceInfo:
     """Create the caller's organization and provision their workspace."""
     if user.organization_id:
@@ -80,12 +83,16 @@ def onboarding(
     if is_demo:
         provisioning.provision_demo_workspace(db, org)
 
-    audit_service.log(db, actor=user, action="create_organization", entity_type="organization", entity_id=org.id)
+    audit_service.log(
+        db, actor=user, action="create_organization", entity_type="organization", entity_id=org.id
+    )
     return _build_workspace_info(db, org)
 
 
 @router.post("/workspace/launch-demo", response_model=WorkspaceInfo)
-def launch_demo(db: Session = Depends(get_db), user: User = Depends(require_onboarded)) -> WorkspaceInfo:
+def launch_demo(
+    db: Session = Depends(get_db), user: User = Depends(require_onboarded)
+) -> WorkspaceInfo:
     """Provision demo data into the current (e.g. connected, empty) workspace."""
     org = db.get(Organization, user.organization_id)
     if org is None:
@@ -94,12 +101,16 @@ def launch_demo(db: Session = Depends(get_db), user: User = Depends(require_onbo
     provisioning.provision_demo_workspace(db, org)
     org.is_demo = True
     db.commit()
-    audit_service.log(db, actor=user, action="launch_demo", entity_type="organization", entity_id=org.id)
+    audit_service.log(
+        db, actor=user, action="launch_demo", entity_type="organization", entity_id=org.id
+    )
     return _build_workspace_info(db, org)
 
 
 @router.get("/workspace", response_model=WorkspaceInfo)
-def get_workspace(db: Session = Depends(get_db), user: User = Depends(require_onboarded)) -> WorkspaceInfo:
+def get_workspace(
+    db: Session = Depends(get_db), user: User = Depends(require_onboarded)
+) -> WorkspaceInfo:
     org = db.get(Organization, user.organization_id)
     if org is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Organization not found")

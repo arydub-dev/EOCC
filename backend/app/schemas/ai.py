@@ -1,4 +1,5 @@
 """Schemas for AI Copilot and Executive Briefing."""
+
 from __future__ import annotations
 
 from datetime import datetime

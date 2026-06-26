@@ -13,6 +13,8 @@ node_modules/
 .next/
 out/
 dist/
+*.tsbuildinfo
+.env.local
 npm-debug.log*
 yarn-error.log*
 .pnpm-debug.log*

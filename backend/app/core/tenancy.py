@@ -7,6 +7,7 @@ through every router and service.
 
 Writes still set ``organization_id`` explicitly at creation time.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import event

@@ -4,6 +4,7 @@ Lets any layer (audit logging, structured logs) read the current request id,
 correlation id, client IP, and user agent without threading them through every
 function signature.
 """
+
 from __future__ import annotations
 
 from contextvars import ContextVar

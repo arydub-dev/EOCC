@@ -1,4 +1,5 @@
 """Mission Control aggregation service."""
+
 from __future__ import annotations
 
 from sqlalchemy import select
@@ -18,7 +19,15 @@ from app.schemas.ops import AlertOut
 
 
 def _metric(key, label, value, unit=None, status="normal", detail=None, trend=None) -> MetricCard:
-    return MetricCard(key=key, label=label, value=round(value, 1), unit=unit, status=status, detail=detail, trend=trend)
+    return MetricCard(
+        key=key,
+        label=label,
+        value=round(value, 1),
+        unit=unit,
+        status=status,
+        detail=detail,
+        trend=trend,
+    )
 
 
 def _status_for(value: float, watch: float, warn: float, crit: float, invert: bool = False) -> str:
@@ -42,30 +51,70 @@ def _status_for(value: float, watch: float, warn: float, crit: float, invert: bo
 
 def build_mission_control(db: Session, snap: OperationalSnapshot) -> MissionControlSummary:
     metrics = [
-        _metric("health", "System Health", snap.overall_health_score, "/100",
-                _status_for(snap.overall_health_score, 80, 60, 40, invert=True),
-                f"Composite operational health ({snap.health_status})"),
-        _metric("severity", "Incident Severity", snap.incident_severity_score, "/100",
-                _status_for(snap.incident_severity_score, 30, 50, 70),
-                "Peak active incident severity"),
-        _metric("population", "Population Impacted", snap.total_population_impacted, "people",
-                _status_for(snap.total_population_impacted, 10000, 100000, 500000),
-                "Across all active incidents"),
-        _metric("active_incidents", "Active Incidents", snap.active_incidents, None,
-                _status_for(snap.active_incidents, 5, 15, 30),
-                f"{snap.escalating_incidents} escalating"),
-        _metric("hospital_capacity", "Hospital Capacity", snap.hospital_capacity_pct, "%",
-                _status_for(snap.hospital_capacity_pct, 70, 85, 95),
-                f"{snap.hospitals_at_risk} at risk"),
-        _metric("shelter_util", "Shelter Utilization", snap.shelter_utilization_pct, "%",
-                _status_for(snap.shelter_utilization_pct, 70, 85, 95),
-                f"{snap.shelters_overcrowded} overcrowded"),
-        _metric("resource_avail", "Resource Availability", snap.resource_availability_pct, "%",
-                _status_for(snap.resource_availability_pct, 50, 30, 15, invert=True),
-                f"{snap.resource_available}/{snap.resource_total} available"),
-        _metric("alerts", "Open Alerts", snap.open_alerts, None,
-                _status_for(snap.critical_alerts, 1, 3, 6),
-                f"{snap.critical_alerts} critical"),
+        _metric(
+            "health",
+            "System Health",
+            snap.overall_health_score,
+            "/100",
+            _status_for(snap.overall_health_score, 80, 60, 40, invert=True),
+            f"Composite operational health ({snap.health_status})",
+        ),
+        _metric(
+            "severity",
+            "Incident Severity",
+            snap.incident_severity_score,
+            "/100",
+            _status_for(snap.incident_severity_score, 30, 50, 70),
+            "Peak active incident severity",
+        ),
+        _metric(
+            "population",
+            "Population Impacted",
+            snap.total_population_impacted,
+            "people",
+            _status_for(snap.total_population_impacted, 10000, 100000, 500000),
+            "Across all active incidents",
+        ),
+        _metric(
+            "active_incidents",
+            "Active Incidents",
+            snap.active_incidents,
+            None,
+            _status_for(snap.active_incidents, 5, 15, 30),
+            f"{snap.escalating_incidents} escalating",
+        ),
+        _metric(
+            "hospital_capacity",
+            "Hospital Capacity",
+            snap.hospital_capacity_pct,
+            "%",
+            _status_for(snap.hospital_capacity_pct, 70, 85, 95),
+            f"{snap.hospitals_at_risk} at risk",
+        ),
+        _metric(
+            "shelter_util",
+            "Shelter Utilization",
+            snap.shelter_utilization_pct,
+            "%",
+            _status_for(snap.shelter_utilization_pct, 70, 85, 95),
+            f"{snap.shelters_overcrowded} overcrowded",
+        ),
+        _metric(
+            "resource_avail",
+            "Resource Availability",
+            snap.resource_availability_pct,
+            "%",
+            _status_for(snap.resource_availability_pct, 50, 30, 15, invert=True),
+            f"{snap.resource_available}/{snap.resource_total} available",
+        ),
+        _metric(
+            "alerts",
+            "Open Alerts",
+            snap.open_alerts,
+            None,
+            _status_for(snap.critical_alerts, 1, 3, 6),
+            f"{snap.critical_alerts} critical",
+        ),
     ]
 
     critical = list(

@@ -1,4 +1,5 @@
 """Schemas for the Security Center."""
+
 from __future__ import annotations
 
 from datetime import datetime

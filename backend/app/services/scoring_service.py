@@ -1,8 +1,9 @@
 """Applies the scoring engines to ORM entities and enriches output payloads."""
+
 from __future__ import annotations
 
 from app.engines import scoring
-from app.models import Hospital, Incident, Resource, Shelter
+from app.models import Hospital, Incident, Shelter
 
 
 def recompute_incident(incident: Incident) -> None:

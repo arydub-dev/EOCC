@@ -4,6 +4,7 @@ Designed for defense in depth and secure-by-default behavior. The rate limiter i
 an in-memory fixed window suitable for a single instance; multi-instance
 deployments should back it with Redis (documented in SECURITY.md).
 """
+
 from __future__ import annotations
 
 import logging
@@ -58,7 +59,10 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         except Exception:
             logger.exception(
                 "request_error path=%s method=%s request_id=%s ip=%s",
-                request.url.path, request.method, request_id, ip,
+                request.url.path,
+                request.method,
+                request_id,
+                ip,
             )
             raise
         finally:
@@ -72,7 +76,12 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         response.headers["X-Correlation-ID"] = correlation_id
         logger.info(
             "method=%s path=%s status=%s duration_ms=%.1f ip=%s request_id=%s",
-            request.method, request.url.path, response.status_code, duration_ms, ip, request_id,
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+            ip,
+            request_id,
         )
         return response
 
@@ -157,7 +166,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         sensitive = self._is_sensitive(path)
         bucket = "auth" if sensitive else "default"
         key = f"{ip}:{bucket}"
-        limit = settings.RATE_LIMIT_AUTH_PER_MINUTE if sensitive else settings.RATE_LIMIT_DEFAULT_PER_MINUTE
+        limit = (
+            settings.RATE_LIMIT_AUTH_PER_MINUTE
+            if sensitive
+            else settings.RATE_LIMIT_DEFAULT_PER_MINUTE
+        )
         now = time.time()
         window_start = now - 60.0
 

@@ -1,10 +1,11 @@
 """Shared schema primitives: pagination envelopes and query params."""
+
 from __future__ import annotations
 
 from typing import Generic, TypeVar
 
 from fastapi import Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 T = TypeVar("T")
 
@@ -19,7 +20,7 @@ class Page(BaseModel, Generic[T]):
     pages: int
 
     @classmethod
-    def create(cls, items: list[T], total: int, page: int, page_size: int) -> "Page[T]":
+    def create(cls, items: list[T], total: int, page: int, page_size: int) -> Page[T]:
         pages = (total + page_size - 1) // page_size if page_size else 0
         return cls(items=items, total=total, page=page, page_size=page_size, pages=pages)
 

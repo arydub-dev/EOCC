@@ -1,4 +1,5 @@
 """Schemas for the Data Integration Center."""
+
 from __future__ import annotations
 
 from datetime import datetime

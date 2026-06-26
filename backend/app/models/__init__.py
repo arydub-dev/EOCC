@@ -1,4 +1,5 @@
 """SQLAlchemy ORM models for the EOCC platform."""
+
 from app.models.enums import (
     AlertCategory,
     AlertSeverity,

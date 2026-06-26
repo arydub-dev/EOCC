@@ -1,4 +1,5 @@
 """Utility Outage endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -7,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, require_manager
 from app.database import get_db
-from app.models import UtilityOutage, User, enums
+from app.models import User, UtilityOutage, enums
 from app.schemas.common import Page, PaginationParams
 from app.schemas.entities import UtilityOutageCreate, UtilityOutageOut, UtilityOutageUpdate
 from app.services import audit_service
@@ -32,25 +33,36 @@ def list_outages(
         stmt = stmt.where(UtilityOutage.status == outage_status)
     if region:
         stmt = stmt.where(UtilityOutage.region == region)
-    items, total = paginate(db, stmt, UtilityOutage, params, ("region", "description"), "customers_affected")
-    return Page.create([UtilityOutageOut.model_validate(o) for o in items], total, params.page, params.page_size)
+    items, total = paginate(
+        db, stmt, UtilityOutage, params, ("region", "description"), "customers_affected"
+    )
+    return Page.create(
+        [UtilityOutageOut.model_validate(o) for o in items], total, params.page, params.page_size
+    )
 
 
 @router.post("", response_model=UtilityOutageOut, status_code=status.HTTP_201_CREATED)
 def create_outage(
-    payload: UtilityOutageCreate, db: Session = Depends(get_db), user: User = Depends(require_manager)
+    payload: UtilityOutageCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_manager),
 ) -> UtilityOutage:
     outage = UtilityOutage(**payload.model_dump(), organization_id=user.organization_id)
     db.add(outage)
     db.commit()
     db.refresh(outage)
-    audit_service.log(db, actor=user, action="create_outage", entity_type="utility_outage", entity_id=outage.id)
+    audit_service.log(
+        db, actor=user, action="create_outage", entity_type="utility_outage", entity_id=outage.id
+    )
     return outage
 
 
 @router.patch("/{outage_id}", response_model=UtilityOutageOut)
 def update_outage(
-    outage_id: int, payload: UtilityOutageUpdate, db: Session = Depends(get_db), user: User = Depends(require_manager)
+    outage_id: int,
+    payload: UtilityOutageUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_manager),
 ) -> UtilityOutage:
     outage = db.get(UtilityOutage, outage_id)
     if not outage:
@@ -59,5 +71,7 @@ def update_outage(
         setattr(outage, key, value)
     db.commit()
     db.refresh(outage)
-    audit_service.log(db, actor=user, action="update_outage", entity_type="utility_outage", entity_id=outage.id)
+    audit_service.log(
+        db, actor=user, action="update_outage", entity_type="utility_outage", entity_id=outage.id
+    )
     return outage

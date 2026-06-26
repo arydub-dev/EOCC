@@ -1,4 +1,5 @@
 """Risk Intelligence endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
@@ -31,7 +32,9 @@ def list_risk(
 
 
 @router.post("/generate", response_model=list[RiskAssessmentOut])
-def generate(db: Session = Depends(get_db), user: User = Depends(require_analyst)) -> list[RiskAssessment]:
+def generate(
+    db: Session = Depends(get_db), user: User = Depends(require_analyst)
+) -> list[RiskAssessment]:
     snap = analytics.build_snapshot(db)
     rows = risk_service.generate_and_store(db, snap, user.organization_id)
     audit_service.log(db, actor=user, action="generate_risk", entity_type="risk_assessment")
