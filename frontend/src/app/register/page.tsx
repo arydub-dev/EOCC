@@ -2,97 +2,119 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { AuthShell } from "@/components/marketing/auth-shell";
 import { Spinner } from "@/components/ui/primitives";
 
-export default function RegisterPage() {
-  const { register } = useAuth();
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+const DEMO_ROLES = [
+  { role: "Administrator", email: "admin@eocc.gov", password: "admin123", blurb: "Full access — every module, users & security" },
+  { role: "Emergency Manager", email: "manager@eocc.gov", password: "manager123", blurb: "Incident response & resource coordination" },
+  { role: "Analyst", email: "analyst@eocc.gov", password: "analyst123", blurb: "Risk analysis & simulations" },
+  { role: "Executive", email: "exec@eocc.gov", password: "exec123", blurb: "Read-only command view & briefings" },
+];
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+export default function DemoAccessPage() {
+  const { login } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const [loadingRole, setLoadingRole] = useState<string | null>(null);
+
+  async function enterDemo(email: string, password: string, role: string) {
     setError(null);
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    setLoading(true);
+    setLoadingRole(role);
     try {
-      await register(email, password, fullName);
+      await login(email, password, true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-      setLoading(false);
+      setError(err instanceof Error ? err.message : "Could not start the demo. Please try again.");
+      setLoadingRole(null);
     }
   }
 
+  const busy = loadingRole !== null;
+
   return (
     <AuthShell
-      title="Create your account"
-      subtitle="Set up your organization's command center in minutes."
+      title="Explore the live demo"
+      subtitle="No sign-up required. Step into a fully populated command center and see how EOCC works."
       footer={
         <>
-          Already have an account?{" "}
+          Already have credentials?{" "}
           <Link href="/login" className="font-medium text-accent hover:underline">
             Sign in
           </Link>
         </>
       }
     >
-      <form onSubmit={submit} className="space-y-3">
-        <div>
-          <label className="stat-label">Full name</label>
-          <input
-            className="input mt-1"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Jordan Rivera"
-            required
-          />
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => enterDemo(DEMO_ROLES[0].email, DEMO_ROLES[0].password, "primary")}
+        className="btn-primary w-full"
+      >
+        {loadingRole === "primary" ? (
+          <Spinner className="text-white" />
+        ) : (
+          <>
+            Enter the demo <ArrowRight className="h-4 w-4" />
+          </>
+        )}
+      </button>
+
+      <div className="mt-5">
+        <p className="stat-label mb-2">Or explore from a specific role</p>
+        <div className="grid grid-cols-1 gap-2">
+          {DEMO_ROLES.map((r) => (
+            <button
+              key={r.email}
+              type="button"
+              disabled={busy}
+              onClick={() => enterDemo(r.email, r.password, r.role)}
+              className="flex items-center justify-between rounded-lg border border-line bg-bg-soft px-3 py-2.5 text-left transition-colors hover:border-accent disabled:opacity-60"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-ink">{r.role}</span>
+                <span className="block truncate text-xs text-ink-faint">{r.blurb}</span>
+              </span>
+              {loadingRole === r.role ? (
+                <Spinner />
+              ) : (
+                <ArrowRight className="h-4 w-4 shrink-0 text-ink-faint" />
+              )}
+            </button>
+          ))}
         </div>
-        <div>
-          <label className="stat-label">Work email</label>
-          <input
-            className="input mt-1"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            type="email"
-            placeholder="you@agency.gov"
-            required
-          />
-        </div>
-        <div>
-          <label className="stat-label">Password</label>
-          <input
-            className="input mt-1"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            placeholder="At least 6 characters"
-            required
-          />
-        </div>
-        {error && <p className="text-sm text-status-critical">{error}</p>}
-        <button type="submit" disabled={loading} className="btn-primary w-full">
-          {loading ? <Spinner className="text-white" /> : "Create account"}
-        </button>
-      </form>
+      </div>
+
+      {error && <p className="mt-3 text-sm text-status-critical">{error}</p>}
 
       <ul className="mt-5 space-y-1.5">
-        {["Free demo workspace", "No credit card required", "All 12 modules included"].map((f) => (
+        {["Pre-loaded with realistic operational data", "All 12 modules included", "Nothing to install or configure"].map((f) => (
           <li key={f} className="flex items-center gap-2 text-xs text-ink-muted">
             <Check className="h-3.5 w-3.5 text-status-normal" /> {f}
           </li>
         ))}
       </ul>
-      <p className="mt-4 text-center text-[11px] text-ink-faint">
-        By creating an account you agree to our Terms and Privacy Policy.
-      </p>
+
+      <div className="mt-6 rounded-xl border border-line bg-bg-soft p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/12 text-accent">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-ink">Want EOCC for your organization?</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              The demo runs on synthetic data. To deploy EOCC with your own data, users, and
+              integrations, connect with our team.
+            </p>
+            <Link
+              href="/contact"
+              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline"
+            >
+              Connect with us <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
     </AuthShell>
   );
 }

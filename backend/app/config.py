@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Emergency Operations Command Center"
     ENVIRONMENT: str = "development"
     API_V1_PREFIX: str = "/api/v1"
-    VERSION: str = "2.0.0"
+    VERSION: str = "1.0.0"
 
     # ── Database ──
     DATABASE_URL: str = "sqlite:///./eocc.db"
