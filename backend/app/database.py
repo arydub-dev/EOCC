@@ -1,9 +1,9 @@
 """Database engine, session factory, and declarative base."""
+
 from __future__ import annotations
 
 from collections.abc import Generator
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import DateTime, Integer, create_engine, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
@@ -37,8 +37,8 @@ class Base(DeclarativeBase):
         nullable=False,
     )
     # Actor stamps for accountability (set by services where a user is in context).
-    created_by_id: Mapped[Optional[int]] = mapped_column(Integer)
-    updated_by_id: Mapped[Optional[int]] = mapped_column(Integer)
+    created_by_id: Mapped[int | None] = mapped_column(Integer)
+    updated_by_id: Mapped[int | None] = mapped_column(Integer)
 
 
 def get_db() -> Generator:

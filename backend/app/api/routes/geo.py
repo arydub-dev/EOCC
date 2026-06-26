@@ -3,6 +3,7 @@
 Returns lightweight, map-ready feature collections for all operational layers
 so the frontend can render a single rich, color-coded situational map.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
@@ -11,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
-from app.models import Hospital, Incident, Resource, Shelter, UtilityOutage, User, enums
+from app.models import Hospital, Incident, Resource, Shelter, User, UtilityOutage, enums
 
 router = APIRouter(prefix="/geo", tags=["Geographic Operations"])
 
@@ -110,7 +111,9 @@ def map_features(
                 "customers_affected": o.customers_affected,
             }
             for o in db.scalars(
-                select(UtilityOutage).where(UtilityOutage.status != enums.UtilityOutageStatus.RESTORED)
+                select(UtilityOutage).where(
+                    UtilityOutage.status != enums.UtilityOutageStatus.RESTORED
+                )
             ).all()
         ]
 

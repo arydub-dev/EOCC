@@ -5,6 +5,7 @@ a discrete band, and the weighted factors that produced it. This makes every
 number traceable back to its inputs — a hard requirement for operational
 decision support.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -128,7 +129,9 @@ def hospital_stress(
     er_load = ratio(er_patients, er_capacity)
     vent_load = ratio(ventilators_in_use, ventilators_total)
     # Staffing gap: required vs on-duty.
-    staffing_gap = _clamp((1 - ratio(staff_on_duty, staff_required)) if staff_required else 0.0, 0, 1)
+    staffing_gap = _clamp(
+        (1 - ratio(staff_on_duty, staff_required)) if staff_required else 0.0, 0, 1
+    )
 
     # Weighted blend; ICU and ER weigh heaviest in surge conditions.
     score = _clamp(
@@ -209,7 +212,9 @@ def resource_readiness(
     utilization = (assigned / total) if total > 0 else 0.0
     # Healthy posture: high readiness + adequate availability, but very low
     # availability under heavy assignment indicates depletion risk.
-    score = _clamp((availability * 45) + (avg_readiness * 0.4) + ((1 - abs(0.4 - utilization)) * 15))
+    score = _clamp(
+        (availability * 45) + (avg_readiness * 0.4) + ((1 - abs(0.4 - utilization)) * 15)
+    )
     factors = {
         "availability_pct": round(availability * 100, 1),
         "utilization_pct": round(utilization * 100, 1),
@@ -240,12 +245,7 @@ def overall_health(
     inv_shelter = 100 - shelter_strain_score
     readiness = resource_readiness_score
 
-    weighted = (
-        inv_incident * 0.30
-        + inv_hospital * 0.25
-        + inv_shelter * 0.20
-        + readiness * 0.25
-    )
+    weighted = inv_incident * 0.30 + inv_hospital * 0.25 + inv_shelter * 0.20 + readiness * 0.25
     alert_penalty = min(20.0, open_critical_alerts * 2.5)
     score = _clamp(weighted - alert_penalty)
 

@@ -5,10 +5,11 @@ new token and revokes the old one. If a previously-rotated (already replaced)
 token is presented again, the entire family is revoked — the canonical defense
 against refresh-token replay.
 """
+
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -23,13 +24,13 @@ class RefreshError(Exception):
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _aware(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
-    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 def device_label(user_agent: str | None) -> str:
@@ -37,12 +38,23 @@ def device_label(user_agent: str | None) -> str:
         return "Unknown device"
     ua = user_agent.lower()
     os = "Unknown OS"
-    for needle, label in (("windows", "Windows"), ("mac os", "macOS"), ("iphone", "iPhone"), ("android", "Android"), ("linux", "Linux")):
+    for needle, label in (
+        ("windows", "Windows"),
+        ("mac os", "macOS"),
+        ("iphone", "iPhone"),
+        ("android", "Android"),
+        ("linux", "Linux"),
+    ):
         if needle in ua:
             os = label
             break
     browser = "browser"
-    for needle, label in (("edg", "Edge"), ("chrome", "Chrome"), ("firefox", "Firefox"), ("safari", "Safari")):
+    for needle, label in (
+        ("edg", "Edge"),
+        ("chrome", "Chrome"),
+        ("firefox", "Firefox"),
+        ("safari", "Safari"),
+    ):
         if needle in ua:
             browser = label
             break

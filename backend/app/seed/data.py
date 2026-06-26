@@ -1,4 +1,5 @@
 """Static reference pools used to generate realistic synthetic data."""
+
 from __future__ import annotations
 
 # (region name, center latitude, center longitude, base population density)
@@ -38,15 +39,36 @@ INCIDENT_NAME_SUFFIX = {
 }
 
 HOSPITAL_NAMES = [
-    "General", "Memorial", "Regional Medical Center", "Mercy", "St. Vincent",
-    "University Medical", "Sacred Heart", "Providence", "Mount Sinai", "Baptist",
-    "Methodist", "Children's", "Veterans", "Community", "Presbyterian",
+    "General",
+    "Memorial",
+    "Regional Medical Center",
+    "Mercy",
+    "St. Vincent",
+    "University Medical",
+    "Sacred Heart",
+    "Providence",
+    "Mount Sinai",
+    "Baptist",
+    "Methodist",
+    "Children's",
+    "Veterans",
+    "Community",
+    "Presbyterian",
 ]
 
 SHELTER_VENUES = [
-    "Community Center", "High School Gymnasium", "Convention Hall", "Recreation Center",
-    "Civic Auditorium", "Fairgrounds Pavilion", "Sports Arena", "Church Hall",
-    "Armory", "Field House", "Public Library Annex", "Stadium Concourse",
+    "Community Center",
+    "High School Gymnasium",
+    "Convention Hall",
+    "Recreation Center",
+    "Civic Auditorium",
+    "Fairgrounds Pavilion",
+    "Sports Arena",
+    "Church Hall",
+    "Armory",
+    "Field House",
+    "Public Library Annex",
+    "Stadium Concourse",
 ]
 
 RESOURCE_LABELS = {

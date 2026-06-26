@@ -1,4 +1,5 @@
 """Mission Control endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -14,7 +15,9 @@ router = APIRouter(prefix="/mission-control", tags=["Mission Control"])
 
 
 @router.get("/summary", response_model=MissionControlSummary)
-def summary(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> MissionControlSummary:
+def summary(
+    db: Session = Depends(get_db), _: User = Depends(get_current_user)
+) -> MissionControlSummary:
     snap = analytics.build_snapshot(db)
     return mission_service.build_mission_control(db, snap)
 

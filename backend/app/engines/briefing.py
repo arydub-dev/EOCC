@@ -4,9 +4,10 @@ Produces a leadership-ready briefing with an executive summary, current
 situation, resource status, emerging risks and recommended actions, plus a
 Markdown rendering for export.
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.engines.recommendations import recommend_actions
 from app.engines.risk_engine import assess_all
@@ -31,7 +32,7 @@ def _executive_summary(s: OperationalSnapshot) -> str:
 
 
 def build_briefing(s: OperationalSnapshot) -> dict:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     summary = _executive_summary(s)
 
     risks = assess_all(s)
@@ -76,7 +77,10 @@ def build_briefing(s: OperationalSnapshot) -> dict:
         {
             "heading": "Emerging Risks",
             "body": "Top risk categories by score:",
-            "bullets": [f"{r.title}: {r.score:.0f}/100 ({r.severity.value}) — {r.explanation}" for r in emerging],
+            "bullets": [
+                f"{r.title}: {r.score:.0f}/100 ({r.severity.value}) — {r.explanation}"
+                for r in emerging
+            ],
         },
         {
             "heading": "Recommended Actions",

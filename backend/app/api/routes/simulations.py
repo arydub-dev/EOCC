@@ -1,4 +1,5 @@
 """Simulation Center endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -15,8 +16,12 @@ router = APIRouter(prefix="/simulations", tags=["Simulation Center"])
 
 
 @router.get("", response_model=list[SimulationOut])
-def list_simulations(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[Simulation]:
-    return list(db.scalars(select(Simulation).order_by(Simulation.created_at.desc()).limit(100)).all())
+def list_simulations(
+    db: Session = Depends(get_db), _: User = Depends(get_current_user)
+) -> list[Simulation]:
+    return list(
+        db.scalars(select(Simulation).order_by(Simulation.created_at.desc()).limit(100)).all()
+    )
 
 
 @router.get("/{simulation_id}", response_model=SimulationOut)
@@ -36,7 +41,11 @@ def run_simulation(
     snap = analytics.build_snapshot(db)
     sim = simulation_service.run_and_store(db, payload, snap, user.id, user.organization_id)
     audit_service.log(
-        db, actor=user, action="run_simulation", entity_type="simulation", entity_id=sim.id,
+        db,
+        actor=user,
+        action="run_simulation",
+        entity_type="simulation",
+        entity_id=sim.id,
         detail={"type": payload.simulation_type.value},
     )
     return sim

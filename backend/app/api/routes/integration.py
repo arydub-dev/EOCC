@@ -1,4 +1,5 @@
 """Data Integration Center endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -25,12 +26,16 @@ router = APIRouter(prefix="/integration", tags=["Data Integration"])
 
 
 @router.get("/overview", response_model=IntegrationOverview)
-def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> IntegrationOverview:
+def overview(
+    db: Session = Depends(get_db), _: User = Depends(get_current_user)
+) -> IntegrationOverview:
     return integration_service.overview(db)
 
 
 @router.get("/sources", response_model=list[DataSourceOut])
-def list_sources(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[DataSource]:
+def list_sources(
+    db: Session = Depends(get_db), _: User = Depends(get_current_user)
+) -> list[DataSource]:
     return list(db.scalars(select(DataSource).order_by(DataSource.name)).all())
 
 
@@ -57,7 +62,11 @@ def create_source(
         category="configuration",
         entity_type="data_source",
         entity_id=source.id,
-        new_value={"name": source.name, "type": source.source_type.value, "has_secret": source.has_secret},
+        new_value={
+            "name": source.name,
+            "type": source.source_type.value,
+            "has_secret": source.has_secret,
+        },
     )
     return source
 
@@ -68,8 +77,12 @@ def pipeline(db: Session = Depends(get_db), _: User = Depends(get_current_user))
 
 
 @router.get("/jobs", response_model=list[ImportJobOut])
-def list_jobs(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[ImportJob]:
-    return list(db.scalars(select(ImportJob).order_by(ImportJob.created_at.desc()).limit(100)).all())
+def list_jobs(
+    db: Session = Depends(get_db), _: User = Depends(get_current_user)
+) -> list[ImportJob]:
+    return list(
+        db.scalars(select(ImportJob).order_by(ImportJob.created_at.desc()).limit(100)).all()
+    )
 
 
 @router.post("/import/csv", response_model=ImportJobOut)
@@ -88,9 +101,17 @@ def import_csv(
         db, payload.target_entity, text, payload.filename, org_id=user.organization_id
     )
     audit_service.log(
-        db, actor=user, action="import_csv", category="data_import",
-        entity_type="import_job", entity_id=job.id,
-        detail={"target": payload.target_entity, "status": job.status.value, "rows": job.records_processed},
+        db,
+        actor=user,
+        action="import_csv",
+        category="data_import",
+        entity_type="import_job",
+        entity_id=job.id,
+        detail={
+            "target": payload.target_entity,
+            "status": job.status.value,
+            "rows": job.records_processed,
+        },
     )
     return job
 
@@ -113,8 +134,12 @@ async def import_excel(
         db, target_entity, content, file.filename, org_id=user.organization_id
     )
     audit_service.log(
-        db, actor=user, action="import_excel", category="data_import",
-        entity_type="import_job", entity_id=job.id,
+        db,
+        actor=user,
+        action="import_excel",
+        category="data_import",
+        entity_type="import_job",
+        entity_id=job.id,
         detail={"target": target_entity, "status": job.status.value, "rows": job.records_processed},
     )
     return job

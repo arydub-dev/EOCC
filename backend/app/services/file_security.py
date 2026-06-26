@@ -7,6 +7,7 @@ Applies to CSV/Excel imports:
 - CSV-injection neutralization (formula-prefix escaping)
 - per-entity schema validation (required columns) before any row is imported
 """
+
 from __future__ import annotations
 
 import io
@@ -53,7 +54,9 @@ def _ext(filename: str | None) -> str:
     return "." + filename.rsplit(".", 1)[1].lower()
 
 
-def validate_csv_upload(filename: str | None, content: bytes | str, content_type: str | None) -> str:
+def validate_csv_upload(
+    filename: str | None, content: bytes | str, content_type: str | None
+) -> str:
     """Validate a CSV upload and return decoded, size-checked text."""
     raw = content.encode() if isinstance(content, str) else content
     if len(raw) > settings.MAX_UPLOAD_BYTES:
@@ -101,7 +104,9 @@ def _guard_zip_bomb(content: bytes) -> None:
                 if info.compress_size > 0:
                     ratio = info.file_size / info.compress_size
                     if ratio > _MAX_COMPRESSION_RATIO:
-                        raise FileSecurityError("Archive compression ratio is suspicious (zip bomb).")
+                        raise FileSecurityError(
+                            "Archive compression ratio is suspicious (zip bomb)."
+                        )
     except zipfile.BadZipFile as exc:
         raise FileSecurityError("Corrupt or invalid Excel archive.") from exc
 
@@ -133,7 +138,7 @@ def allowed_target(target_entity: str) -> bool:
     return target_entity in REQUIRED_COLUMNS
 
 
-def origin_for_source(source_type: "enums.DataSourceType") -> "enums.DataOrigin":
+def origin_for_source(source_type: enums.DataSourceType) -> enums.DataOrigin:
     return (
         enums.DataOrigin.EXCEL
         if source_type == enums.DataSourceType.EXCEL_IMPORT

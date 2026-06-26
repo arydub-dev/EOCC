@@ -1,7 +1,8 @@
 """Risk Intelligence service: generates and persists risk assessments."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
@@ -21,7 +22,7 @@ def generate_and_store(
             RiskAssessment.organization_id == org_id,
         )
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     rows: list[RiskAssessment] = []
     for result in risk_engine.assess_all(snap):
         row = RiskAssessment(

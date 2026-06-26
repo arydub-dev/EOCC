@@ -1,7 +1,8 @@
 """Alert generation and lifecycle service."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -24,14 +25,16 @@ def evaluate_and_generate(db: Session, org_id: int | None = None) -> list[Alert]
     Idempotent: will not duplicate an open alert for the same subject. Reads are
     already tenant-scoped via the session; new alerts are stamped with ``org_id``.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     created: list[Alert] = []
 
     # Hospitals over stress threshold.
     for h in db.scalars(select(Hospital).where(Hospital.stress_score >= 75)).all():
         if _exists_open(db, enums.AlertCategory.HOSPITAL_OVERLOAD, hospital_id=h.id):
             continue
-        sev = enums.AlertSeverity.EMERGENCY if h.stress_score >= 88 else enums.AlertSeverity.CRITICAL
+        sev = (
+            enums.AlertSeverity.EMERGENCY if h.stress_score >= 88 else enums.AlertSeverity.CRITICAL
+        )
         created.append(
             Alert(
                 organization_id=org_id,
@@ -146,7 +149,7 @@ def evaluate_and_generate(db: Session, org_id: int | None = None) -> list[Alert]
 def acknowledge(db: Session, alert: Alert, user_id: int, notes: str | None) -> Alert:
     alert.status = enums.AlertStatus.ACKNOWLEDGED
     alert.acknowledged_by_id = user_id
-    alert.acknowledged_at = datetime.now(timezone.utc)
+    alert.acknowledged_at = datetime.now(UTC)
     actions = list(alert.response_actions or [])
     actions.append({"action": "acknowledged", "user_id": user_id, "notes": notes, "at": _now_iso()})
     alert.response_actions = actions
@@ -157,7 +160,7 @@ def acknowledge(db: Session, alert: Alert, user_id: int, notes: str | None) -> A
 
 def resolve(db: Session, alert: Alert, user_id: int, notes: str | None) -> Alert:
     alert.status = enums.AlertStatus.RESOLVED
-    alert.resolved_at = datetime.now(timezone.utc)
+    alert.resolved_at = datetime.now(UTC)
     actions = list(alert.response_actions or [])
     actions.append({"action": "resolved", "user_id": user_id, "notes": notes, "at": _now_iso()})
     alert.response_actions = actions
@@ -176,4 +179,4 @@ def add_action(db: Session, alert: Alert, user_id: int, action: str, notes: str 
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()

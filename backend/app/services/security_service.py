@@ -4,9 +4,10 @@ All queries are explicitly scoped to the caller's organization (login attempts a
 sessions are not part of the automatic tenant filter set, so isolation is enforced
 here by filtering on ``organization_id``).
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -16,7 +17,7 @@ from app.models import AuditLog, LoginAttempt, Organization, User, UserSession
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def password_policy() -> dict:
@@ -41,39 +42,54 @@ def overview(db: Session, org_id: int) -> dict:
     verified_users = sum(1 for u in users if u.is_verified)
     locked_users = sum(1 for u in users if u.locked_until and _aware(u.locked_until) > _now())
 
-    failed_24h = db.scalar(
-        select(func.count(LoginAttempt.id)).where(
-            LoginAttempt.organization_id == org_id,
-            LoginAttempt.successful.is_(False),
-            LoginAttempt.created_at >= day_ago,
+    failed_24h = (
+        db.scalar(
+            select(func.count(LoginAttempt.id)).where(
+                LoginAttempt.organization_id == org_id,
+                LoginAttempt.successful.is_(False),
+                LoginAttempt.created_at >= day_ago,
+            )
         )
-    ) or 0
-    success_24h = db.scalar(
-        select(func.count(LoginAttempt.id)).where(
-            LoginAttempt.organization_id == org_id,
-            LoginAttempt.successful.is_(True),
-            LoginAttempt.created_at >= day_ago,
+        or 0
+    )
+    success_24h = (
+        db.scalar(
+            select(func.count(LoginAttempt.id)).where(
+                LoginAttempt.organization_id == org_id,
+                LoginAttempt.successful.is_(True),
+                LoginAttempt.created_at >= day_ago,
+            )
         )
-    ) or 0
-    active_sessions = db.scalar(
-        select(func.count(UserSession.id)).where(
-            UserSession.organization_id == org_id,
-            UserSession.revoked_at.is_(None),
-            UserSession.expires_at > _now(),
+        or 0
+    )
+    active_sessions = (
+        db.scalar(
+            select(func.count(UserSession.id)).where(
+                UserSession.organization_id == org_id,
+                UserSession.revoked_at.is_(None),
+                UserSession.expires_at > _now(),
+            )
         )
-    ) or 0
-    audit_7d = db.scalar(
-        select(func.count(AuditLog.id)).where(
-            AuditLog.organization_id == org_id, AuditLog.created_at >= week_ago
+        or 0
+    )
+    audit_7d = (
+        db.scalar(
+            select(func.count(AuditLog.id)).where(
+                AuditLog.organization_id == org_id, AuditLog.created_at >= week_ago
+            )
         )
-    ) or 0
-    security_events_7d = db.scalar(
-        select(func.count(AuditLog.id)).where(
-            AuditLog.organization_id == org_id,
-            AuditLog.category == "security",
-            AuditLog.created_at >= week_ago,
+        or 0
+    )
+    security_events_7d = (
+        db.scalar(
+            select(func.count(AuditLog.id)).where(
+                AuditLog.organization_id == org_id,
+                AuditLog.category == "security",
+                AuditLog.created_at >= week_ago,
+            )
         )
-    ) or 0
+        or 0
+    )
 
     org = db.get(Organization, org_id)
     score, recommendations = _score(
@@ -126,10 +142,12 @@ def active_sessions(db: Session, org_id: int) -> list[UserSession]:
 
 
 def _aware(dt: datetime) -> datetime:
-    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
-def _score(*, total_users: int, mfa_users: int, verified_users: int, failed_24h: int, is_demo: bool) -> tuple[int, list[str]]:
+def _score(
+    *, total_users: int, mfa_users: int, verified_users: int, failed_24h: int, is_demo: bool
+) -> tuple[int, list[str]]:
     score = 100
     recs: list[str] = []
 

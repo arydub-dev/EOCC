@@ -21,7 +21,7 @@ export default function ContactPage() {
           Schedule a demo
         </h1>
         <p className="mt-4 text-lg text-ink-muted">
-          Tell us about your operation and we'll tailor a walkthrough — or start exploring instantly
+          Tell us about your operation and we&apos;ll tailor a walkthrough — or start exploring instantly
           with a free demo workspace.
         </p>
 

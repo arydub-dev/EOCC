@@ -4,10 +4,11 @@ Generates a complete, organization-scoped synthetic operational picture for a
 tenant's *Demo Mode* workspace. Connected Mode workspaces start empty and are
 populated via the Data Integration Center instead.
 """
+
 from __future__ import annotations
 
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -36,7 +37,7 @@ DEMO = enums.DataOrigin.DEMO
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def provision_demo_workspace(

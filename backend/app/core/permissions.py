@@ -5,6 +5,7 @@ require, and roles are mapped to permission sets here. This keeps least-privileg
 explicit and makes it trivial to audit who can do what. The frontend may read a
 user's permissions to shape the UI, but the server is the only enforcement point.
 """
+
 from __future__ import annotations
 
 from app.models.enums import UserRole

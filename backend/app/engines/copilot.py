@@ -5,6 +5,7 @@ local fallback engine, and also supplies the grounding context for the optional
 OpenAI-backed path. Intent is resolved with transparent keyword matching so the
 platform stays fully functional with no external dependencies.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -33,16 +34,24 @@ def _hospital_stress_answer(s: OperationalSnapshot) -> CopilotAnswer:
     ]
     answer = (
         f"{s.hospitals_at_risk} of {s.hospital_count} hospitals are at risk. "
-        f"System ICU occupancy is {s.icu_occupancy_pct:.0f}%. Most stressed:\n"
-        + "\n".join(lines)
+        f"System ICU occupancy is {s.icu_occupancy_pct:.0f}%. Most stressed:\n" + "\n".join(lines)
     )
     return CopilotAnswer(
         answer,
         0.92,
-        {"top_stressed_hospitals": [h.__dict__ for h in top], "hospitals_at_risk": s.hospitals_at_risk},
-        ["Activate diversion for the top-stressed facilities.", "Deploy medical strike teams to ICU surge sites."],
+        {
+            "top_stressed_hospitals": [h.__dict__ for h in top],
+            "hospitals_at_risk": s.hospitals_at_risk,
+        },
+        [
+            "Activate diversion for the top-stressed facilities.",
+            "Deploy medical strike teams to ICU surge sites.",
+        ],
         [f"hospital:{h.id}" for h in top],
-        ["Where should we deploy additional medical teams?", "Which shelters will reach capacity first?"],
+        [
+            "Where should we deploy additional medical teams?",
+            "Which shelters will reach capacity first?",
+        ],
     )
 
 
@@ -61,12 +70,17 @@ def _resource_deploy_answer(s: OperationalSnapshot) -> CopilotAnswer:
         f"({s.resource_availability_pct:.0f}%).\n" + "\n".join(lines)
     )
     if s.depleted_resource_types:
-        answer += "\nDepleted categories needing resupply: " + ", ".join(s.depleted_resource_types) + "."
+        answer += (
+            "\nDepleted categories needing resupply: " + ", ".join(s.depleted_resource_types) + "."
+        )
     return CopilotAnswer(
         answer,
         0.88,
         {"priority_incidents": [t.__dict__ for t in top], "depleted": s.depleted_resource_types},
-        ["Rebalance idle units toward the top incident.", "Request mutual aid for depleted categories."],
+        [
+            "Rebalance idle units toward the top incident.",
+            "Request mutual aid for depleted categories.",
+        ],
         [f"incident:{t.id}" for t in top],
         ["What incidents pose the highest risk?", "Which hospitals are under the most stress?"],
     )
@@ -89,9 +103,15 @@ def _shelter_capacity_answer(s: OperationalSnapshot) -> CopilotAnswer:
         answer,
         0.9,
         {"top_strained_shelters": [sh.__dict__ for sh in top]},
-        ["Open overflow capacity near the most strained shelters.", "Resupply shelters below 2 days of food."],
+        [
+            "Open overflow capacity near the most strained shelters.",
+            "Resupply shelters below 2 days of food.",
+        ],
         [f"shelter:{sh.id}" for sh in top],
-        ["Which hospitals are under the most stress?", "Where should we deploy additional resources?"],
+        [
+            "Which hospitals are under the most stress?",
+            "Where should we deploy additional resources?",
+        ],
     )
 
 
@@ -113,9 +133,15 @@ def _incident_risk_answer(s: OperationalSnapshot) -> CopilotAnswer:
         answer,
         0.91,
         {"top_incidents": [t.__dict__ for t in incidents]},
-        ["Escalate command posture for worsening incidents.", "Concentrate resources on the top incident."],
+        [
+            "Escalate command posture for worsening incidents.",
+            "Concentrate resources on the top incident.",
+        ],
         [f"incident:{t.id}" for t in incidents],
-        ["Where should we deploy additional resources?", "Which hospitals are under the most stress?"],
+        [
+            "Where should we deploy additional resources?",
+            "Which hospitals are under the most stress?",
+        ],
     )
 
 
@@ -180,6 +206,9 @@ def grounding_context(s: OperationalSnapshot) -> dict:
         "critical_alerts": s.critical_alerts,
         "top_stressed_hospitals": [h.__dict__ for h in s.top_stressed_hospitals[:5]],
         "top_strained_shelters": [sh.__dict__ for sh in s.top_strained_shelters[:5]],
-        "top_incidents": [i.__dict__ for i in sorted(s.incidents, key=lambda x: x.severity_score, reverse=True)[:5]],
+        "top_incidents": [
+            i.__dict__
+            for i in sorted(s.incidents, key=lambda x: x.severity_score, reverse=True)[:5]
+        ],
         "depleted_resource_types": s.depleted_resource_types,
     }

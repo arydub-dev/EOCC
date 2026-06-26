@@ -3,6 +3,7 @@
 Produces explainable risk assessments across the five doctrinal categories.
 Each assessment is a pure function of the operational snapshot.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -68,7 +69,9 @@ def _infrastructure_risk(s: OperationalSnapshot) -> RiskResult:
     score = _clamp(outage_factor + active_factor)
     recs = ["Prioritize restoration for outages serving hospitals and shelters."]
     if s.utility_by_type.get("power", 0):
-        recs.append(f"Deploy mobile generators to {s.utility_by_type.get('power')} power-outage zone(s).")
+        recs.append(
+            f"Deploy mobile generators to {s.utility_by_type.get('power')} power-outage zone(s)."
+        )
     if s.customers_without_service > 50_000:
         recs.append("Coordinate with utility partners for mutual-aid crews.")
     return RiskResult(
@@ -89,7 +92,9 @@ def _healthcare_risk(s: OperationalSnapshot) -> RiskResult:
     score = _clamp(stress_factor + at_risk_factor + icu_factor)
     recs = []
     if s.hospitals_at_risk:
-        recs.append(f"Activate load-balancing / diversion for {s.hospitals_at_risk} at-risk hospital(s).")
+        recs.append(
+            f"Activate load-balancing / diversion for {s.hospitals_at_risk} at-risk hospital(s)."
+        )
     if s.icu_occupancy_pct > 80:
         recs.append("Stand up surge ICU capacity and request regional mutual aid.")
     recs.append("Deploy additional medical teams to highest-stress facilities.")
@@ -112,9 +117,7 @@ def _resource_risk(s: OperationalSnapshot) -> RiskResult:
     score = _clamp(scarcity + readiness_gap + depletion)
     recs = []
     if s.depleted_resource_types:
-        recs.append(
-            "Resupply depleted categories: " + ", ".join(s.depleted_resource_types) + "."
-        )
+        recs.append("Resupply depleted categories: " + ", ".join(s.depleted_resource_types) + ".")
     if s.resource_availability_pct < 40:
         recs.append("Request mutual-aid resources from neighboring jurisdictions.")
     recs.append("Rebalance idle assets toward highest-severity incidents.")

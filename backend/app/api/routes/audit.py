@@ -1,4 +1,5 @@
 """Audit Center endpoints (Audit.View). Audit records are immutable."""
+
 from __future__ import annotations
 
 import csv
@@ -53,13 +54,24 @@ def list_audit(
 ) -> Page[AuditLogOut]:
     stmt = _filtered(
         select(AuditLog),
-        action=action, category=category, entity_type=entity_type,
-        actor_email=actor_email, start=start, end=end,
+        action=action,
+        category=category,
+        entity_type=entity_type,
+        actor_email=actor_email,
+        start=start,
+        end=end,
     )
     items, total = paginate(
-        db, stmt, AuditLog, params, ("action", "actor_email", "entity_type", "category"), "created_at"
+        db,
+        stmt,
+        AuditLog,
+        params,
+        ("action", "actor_email", "entity_type", "category"),
+        "created_at",
     )
-    return Page.create([AuditLogOut.model_validate(a) for a in items], total, params.page, params.page_size)
+    return Page.create(
+        [AuditLogOut.model_validate(a) for a in items], total, params.page, params.page_size
+    )
 
 
 @router.get("/export")
@@ -74,17 +86,34 @@ def export_audit(
     user: User = Depends(require_permission(Permission.AUDIT_VIEW)),
 ) -> StreamingResponse:
     """Export filtered audit records as CSV (injection-safe)."""
-    stmt = _filtered(
-        select(AuditLog),
-        action=action, category=category, entity_type=entity_type,
-        actor_email=actor_email, start=start, end=end,
-    ).order_by(AuditLog.created_at.desc()).limit(50_000)
+    stmt = (
+        _filtered(
+            select(AuditLog),
+            action=action,
+            category=category,
+            entity_type=entity_type,
+            actor_email=actor_email,
+            start=start,
+            end=end,
+        )
+        .order_by(AuditLog.created_at.desc())
+        .limit(50_000)
+    )
     rows = list(db.scalars(stmt).all())
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(
-        ["timestamp", "actor", "category", "action", "entity_type", "entity_id", "ip_address", "correlation_id"]
+        [
+            "timestamp",
+            "actor",
+            "category",
+            "action",
+            "entity_type",
+            "entity_id",
+            "ip_address",
+            "correlation_id",
+        ]
     )
     for r in rows:
         writer.writerow(
@@ -100,8 +129,12 @@ def export_audit(
             ]
         )
     audit_service.log(
-        db, actor=user, action="export_audit", category="security",
-        entity_type="audit_log", detail={"rows": len(rows)},
+        db,
+        actor=user,
+        action="export_audit",
+        category="security",
+        entity_type="audit_log",
+        detail={"rows": len(rows)},
     )
     buffer.seek(0)
     return StreamingResponse(

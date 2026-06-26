@@ -1,12 +1,13 @@
 """Data Integration Center service: connectors, CSV/Excel import, pipeline."""
+
 from __future__ import annotations
 
 import csv
 import io
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -21,7 +22,9 @@ def overview(db: Session) -> IntegrationOverview:
     healthy = sum(1 for s in sources if s.status == enums.DataSourceStatus.HEALTHY)
     degraded = sum(1 for s in sources if s.status == enums.DataSourceStatus.DEGRADED)
     offline = sum(
-        1 for s in sources if s.status in (enums.DataSourceStatus.OFFLINE, enums.DataSourceStatus.DISCONNECTED)
+        1
+        for s in sources
+        if s.status in (enums.DataSourceStatus.OFFLINE, enums.DataSourceStatus.DISCONNECTED)
     )
     total_records = sum(s.records_synced for s in sources)
     avg_health = round(sum(s.health_score for s in sources) / len(sources), 1) if sources else 0.0
@@ -147,7 +150,7 @@ def _import_incident(db: Session, row: dict, org_id: int | None, origin: enums.D
         radius_km=_parse_float(row.get("radius_km", "5")),
         severity=_parse_int(row.get("severity", "3")),
         population_impacted=_parse_int(row.get("population_impacted", "0")),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
     scoring_service.recompute_incident(inc)
     db.add(inc)
@@ -181,7 +184,7 @@ def run_csv_import(
         target_entity=target_entity,
         status=enums.ImportJobStatus.RUNNING,
         filename=filename,
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
     db.add(job)
     db.commit()
@@ -194,7 +197,7 @@ def run_csv_import(
     if importer is None:
         job.status = enums.ImportJobStatus.FAILED
         job.errors = [{"row": 0, "error": f"Unsupported target entity: {target_entity}"}]
-        job.finished_at = datetime.now(timezone.utc)
+        job.finished_at = datetime.now(UTC)
         db.commit()
         db.refresh(job)
         return job
@@ -206,7 +209,7 @@ def run_csv_import(
     except FileSecurityError as exc:
         job.status = enums.ImportJobStatus.FAILED
         job.errors = [{"row": 0, "error": str(exc)}]
-        job.finished_at = datetime.now(timezone.utc)
+        job.finished_at = datetime.now(UTC)
         db.commit()
         db.refresh(job)
         return job
@@ -218,11 +221,7 @@ def run_csv_import(
             break
         try:
             # Strip whitespace and neutralize CSV/formula injection on every cell.
-            clean = {
-                k.strip(): sanitize_cell((v or "").strip())
-                for k, v in row.items()
-                if k
-            }
+            clean = {k.strip(): sanitize_cell((v or "").strip()) for k, v in row.items() if k}
             importer(db, clean, org_id, origin)
             processed += 1
         except Exception as exc:  # noqa: BLE001 - report row-level failures
@@ -235,7 +234,7 @@ def run_csv_import(
     job.records_failed = failed
     job.errors = errors or None
     job.duration_ms = int((time.perf_counter() - started) * 1000)
-    job.finished_at = datetime.now(timezone.utc)
+    job.finished_at = datetime.now(UTC)
     if failed == 0:
         job.status = enums.ImportJobStatus.COMPLETED
     elif processed == 0:
@@ -248,7 +247,11 @@ def run_csv_import(
 
 
 def run_excel_import(
-    db: Session, target_entity: str, file_bytes: bytes, filename: str | None, org_id: int | None = None
+    db: Session,
+    target_entity: str,
+    file_bytes: bytes,
+    filename: str | None,
+    org_id: int | None = None,
 ) -> ImportJob:
     """Convert the first worksheet to CSV text, then reuse the CSV importer."""
     from openpyxl import load_workbook

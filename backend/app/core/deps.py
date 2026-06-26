@@ -4,6 +4,7 @@ Authorization is enforced server-side only. Endpoints declare the *permission*
 they require via :func:`require_permission`; roles are mapped to permissions in
 ``app.core.permissions``. Coarse role checks remain available for convenience.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
@@ -20,7 +21,9 @@ from app.core.tenancy import set_session_org
 from app.database import get_db
 from app.models import User, UserRole
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login", auto_error=True)
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_PREFIX}/auth/login", auto_error=True
+)
 
 # Role hierarchy — higher value implies broader access for convenience checks.
 ROLE_RANK = {

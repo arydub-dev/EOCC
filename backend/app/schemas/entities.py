@@ -1,4 +1,5 @@
 """Schemas for incidents, hospitals, shelters, resources and utility outages."""
+
 from __future__ import annotations
 
 from datetime import datetime

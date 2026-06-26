@@ -1,4 +1,5 @@
 """AI Operations Copilot endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -31,7 +32,9 @@ def copilot_status(_: User = Depends(get_current_user)) -> dict:
 
 
 @router.post("/ask", response_model=CopilotResponse)
-def ask(payload: CopilotQuery, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> CopilotResponse:
+def ask(
+    payload: CopilotQuery, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> CopilotResponse:
     snap = analytics.build_snapshot(db)
     return copilot_service.ask(db, payload.question, snap, user.id, user.organization_id)
 
@@ -40,6 +43,9 @@ def ask(payload: CopilotQuery, db: Session = Depends(get_db), user: User = Depen
 def history(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[AIReport]:
     return list(
         db.scalars(
-            select(AIReport).where(AIReport.report_type == "copilot").order_by(AIReport.created_at.desc()).limit(50)
+            select(AIReport)
+            .where(AIReport.report_type == "copilot")
+            .order_by(AIReport.created_at.desc())
+            .limit(50)
         ).all()
     )

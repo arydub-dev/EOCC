@@ -1,4 +1,5 @@
 """Hospital Operations endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -32,12 +33,17 @@ def list_hospitals(
         stmt = stmt.where(Hospital.stress_score >= 55)
     items, total = paginate(db, stmt, Hospital, params, ("name", "region"), "stress_score")
     return Page.create(
-        [HospitalOut.model_validate(hospital_out(h)) for h in items], total, params.page, params.page_size
+        [HospitalOut.model_validate(hospital_out(h)) for h in items],
+        total,
+        params.page,
+        params.page_size,
     )
 
 
 @router.get("/{hospital_id}", response_model=HospitalOut)
-def get_hospital(hospital_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> HospitalOut:
+def get_hospital(
+    hospital_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)
+) -> HospitalOut:
     hospital = db.get(Hospital, hospital_id)
     if not hospital:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Hospital not found")
@@ -53,13 +59,18 @@ def create_hospital(
     db.add(hospital)
     db.commit()
     db.refresh(hospital)
-    audit_service.log(db, actor=user, action="create_hospital", entity_type="hospital", entity_id=hospital.id)
+    audit_service.log(
+        db, actor=user, action="create_hospital", entity_type="hospital", entity_id=hospital.id
+    )
     return HospitalOut.model_validate(hospital_out(hospital))
 
 
 @router.patch("/{hospital_id}", response_model=HospitalOut)
 def update_hospital(
-    hospital_id: int, payload: HospitalUpdate, db: Session = Depends(get_db), user: User = Depends(require_manager)
+    hospital_id: int,
+    payload: HospitalUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_manager),
 ) -> HospitalOut:
     hospital = db.get(Hospital, hospital_id)
     if not hospital:
@@ -69,5 +80,7 @@ def update_hospital(
     recompute_hospital(hospital)
     db.commit()
     db.refresh(hospital)
-    audit_service.log(db, actor=user, action="update_hospital", entity_type="hospital", entity_id=hospital.id)
+    audit_service.log(
+        db, actor=user, action="update_hospital", entity_type="hospital", entity_id=hospital.id
+    )
     return HospitalOut.model_validate(hospital_out(hospital))

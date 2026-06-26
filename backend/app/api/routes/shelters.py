@@ -1,4 +1,5 @@
 """Shelter Operations endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -32,12 +33,17 @@ def list_shelters(
         stmt = stmt.where(Shelter.status == shelter_status)
     items, total = paginate(db, stmt, Shelter, params, ("name", "region"), "utilization_score")
     return Page.create(
-        [ShelterOut.model_validate(shelter_out(s)) for s in items], total, params.page, params.page_size
+        [ShelterOut.model_validate(shelter_out(s)) for s in items],
+        total,
+        params.page,
+        params.page_size,
     )
 
 
 @router.get("/{shelter_id}", response_model=ShelterOut)
-def get_shelter(shelter_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> ShelterOut:
+def get_shelter(
+    shelter_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)
+) -> ShelterOut:
     shelter = db.get(Shelter, shelter_id)
     if not shelter:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Shelter not found")
@@ -53,13 +59,18 @@ def create_shelter(
     db.add(shelter)
     db.commit()
     db.refresh(shelter)
-    audit_service.log(db, actor=user, action="create_shelter", entity_type="shelter", entity_id=shelter.id)
+    audit_service.log(
+        db, actor=user, action="create_shelter", entity_type="shelter", entity_id=shelter.id
+    )
     return ShelterOut.model_validate(shelter_out(shelter))
 
 
 @router.patch("/{shelter_id}", response_model=ShelterOut)
 def update_shelter(
-    shelter_id: int, payload: ShelterUpdate, db: Session = Depends(get_db), user: User = Depends(require_manager)
+    shelter_id: int,
+    payload: ShelterUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_manager),
 ) -> ShelterOut:
     shelter = db.get(Shelter, shelter_id)
     if not shelter:
@@ -73,5 +84,7 @@ def update_shelter(
         shelter.status = explicit_status
     db.commit()
     db.refresh(shelter)
-    audit_service.log(db, actor=user, action="update_shelter", entity_type="shelter", entity_id=shelter.id)
+    audit_service.log(
+        db, actor=user, action="update_shelter", entity_type="shelter", entity_id=shelter.id
+    )
     return ShelterOut.model_validate(shelter_out(shelter))

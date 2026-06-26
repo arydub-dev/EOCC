@@ -1,7 +1,8 @@
 """Incident Management endpoints."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -42,8 +43,12 @@ def list_incidents(
         stmt = stmt.where(Incident.status == incident_status)
     if region:
         stmt = stmt.where(Incident.region == region)
-    items, total = paginate(db, stmt, Incident, params, ("name", "region", "description"), "severity_score")
-    return Page.create([IncidentOut.model_validate(i) for i in items], total, params.page, params.page_size)
+    items, total = paginate(
+        db, stmt, Incident, params, ("name", "region", "description"), "severity_score"
+    )
+    return Page.create(
+        [IncidentOut.model_validate(i) for i in items], total, params.page, params.page_size
+    )
 
 
 @router.get("/{incident_id}", response_model=IncidentDetail)
@@ -94,15 +99,23 @@ def create_incident(
             incident_id=incident.id,
             event_type="created",
             description=f"Incident '{incident.name}' opened at severity {incident.severity}/5.",
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
         )
     )
     db.commit()
     db.refresh(incident)
     audit_service.log(
-        db, actor=user, action="create_incident", category="incident",
-        entity_type="incident", entity_id=incident.id,
-        new_value={"name": incident.name, "type": incident.incident_type.value, "severity": incident.severity},
+        db,
+        actor=user,
+        action="create_incident",
+        category="incident",
+        entity_type="incident",
+        entity_id=incident.id,
+        new_value={
+            "name": incident.name,
+            "type": incident.incident_type.value,
+            "severity": incident.severity,
+        },
     )
     return incident
 
@@ -129,7 +142,7 @@ def update_incident(
     for key, value in data.items():
         setattr(incident, key, value)
     if incident.status == enums.IncidentStatus.RESOLVED and not incident.resolved_at:
-        incident.resolved_at = datetime.now(timezone.utc)
+        incident.resolved_at = datetime.now(UTC)
     incident.updated_by_id = user.id
     recompute_incident(incident)
     event_descr = f"Incident updated (severity {incident.severity_score:.0f}/100)."
@@ -140,15 +153,21 @@ def update_incident(
             incident_id=incident.id,
             event_type="update",
             description=event_descr,
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
         )
     )
     db.commit()
     db.refresh(incident)
     after = {"status": incident.status.value, "severity": incident.severity, "name": incident.name}
     audit_service.log(
-        db, actor=user, action="update_incident", category="incident",
-        entity_type="incident", entity_id=incident.id, old_value=before, new_value=after,
+        db,
+        actor=user,
+        action="update_incident",
+        category="incident",
+        entity_type="incident",
+        entity_id=incident.id,
+        old_value=before,
+        new_value=after,
     )
     return incident
 
@@ -163,11 +182,15 @@ def delete_incident(
     if not incident or incident.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Incident not found")
     # Soft delete preserves the record for audit/forensics.
-    incident.deleted_at = datetime.now(timezone.utc)
+    incident.deleted_at = datetime.now(UTC)
     incident.updated_by_id = user.id
     db.commit()
     audit_service.log(
-        db, actor=user, action="delete_incident", category="incident",
-        entity_type="incident", entity_id=incident_id,
+        db,
+        actor=user,
+        action="delete_incident",
+        category="incident",
+        entity_type="incident",
+        entity_id=incident_id,
     )
     return Message(detail="Incident deleted")

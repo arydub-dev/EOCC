@@ -111,7 +111,7 @@ export default function HomePage() {
       <section className="border-y border-line bg-bg-soft/30">
         <div className="section flex flex-wrap items-center justify-center gap-x-10 gap-y-4 py-6 text-center">
           <p className="text-xs uppercase tracking-[0.18em] text-ink-faint">
-            Built for the organizations that can't afford downtime
+            Built for the organizations that can&apos;t afford downtime
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-semibold text-ink-muted">
             {["Government", "Healthcare", "Emergency Services", "Utilities", "Critical Infrastructure"].map((n) => (
@@ -129,7 +129,7 @@ export default function HomePage() {
             Crisis response breaks where information lives
           </h2>
           <p className="mt-4 text-ink-muted">
-            When an emergency hits, the bottleneck is rarely effort — it's coordination. Disconnected
+            When an emergency hits, the bottleneck is rarely effort — it&apos;s coordination. Disconnected
             systems and missing visibility quietly cost lives, time, and money.
           </p>
         </div>
@@ -160,7 +160,7 @@ export default function HomePage() {
             <p className="mt-4 text-ink-muted">
               EOCC fuses incidents, hospitals, shelters, resources, weather, and infrastructure into a
               single live model. Deterministic decision engines then turn that model into clear
-              answers — so your team always knows what's happening, why, and what to do next.
+              answers — so your team always knows what&apos;s happening, why, and what to do next.
             </p>
             <div className="mt-6 space-y-3">
               {[
@@ -298,7 +298,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-2xl text-center">
           <p className="eyebrow">Pricing</p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            Start free. Scale when you're ready.
+            Start free. Scale when you&apos;re ready.
           </h2>
           <p className="mt-4 text-ink-muted">
             Evaluate the full platform in Demo Mode at no cost. Upgrade for live data and enterprise

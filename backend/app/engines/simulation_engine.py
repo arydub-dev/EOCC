@@ -4,6 +4,7 @@ Each scenario consumes the current operational snapshot plus user parameters
 and returns projected impacts and mitigation recommendations. Results are
 fully reproducible.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -154,7 +155,9 @@ def _hospital_outage(s: OperationalSnapshot, p: dict) -> SimulationResult:
                 "ambulances": max(2, beds_lost // 20),
                 "medical_teams": max(1, icu_lost // 10),
             },
-            "system_capacity_after_pct": round(min(100, s.hospital_capacity_pct + (beds_lost / max(s.hospital_count, 1) / 5)), 1),
+            "system_capacity_after_pct": round(
+                min(100, s.hospital_capacity_pct + (beds_lost / max(s.hospital_count, 1) / 5)), 1
+            ),
         },
         recommendations=[
             f"Transfer {beds_lost} patients; only {max(0, redistributed)} beds available system-wide.",
@@ -179,7 +182,9 @@ def _resource_depletion(s: OperationalSnapshot, p: dict) -> SimulationResult:
             "units_lost": lost,
             "units_remaining": remaining,
             "coverage_after_pct": round(_clamp((remaining / current * 100) if current else 0), 1),
-            "additional_resources_required": {"mutual_aid_units": max(0, lost - int(remaining * 0.2))},
+            "additional_resources_required": {
+                "mutual_aid_units": max(0, lost - int(remaining * 0.2))
+            },
         },
         recommendations=[
             f"Request {max(0, lost)} {rtype} units via mutual aid to restore coverage.",

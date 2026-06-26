@@ -4,6 +4,7 @@ Audit entries are append-only (enforced in ``app.core.audit_guard``). Request
 context (correlation id, client IP, user agent) is captured automatically.
 Secrets are never recorded — callers must pass only non-sensitive field diffs.
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,8 +27,7 @@ def _redact(value: dict | None) -> dict | None:
     if not value:
         return value
     return {
-        k: ("***" if any(s in k.lower() for s in _REDACT_KEYS) else v)
-        for k, v in value.items()
+        k: ("***" if any(s in k.lower() for s in _REDACT_KEYS) else v) for k, v in value.items()
     }
 
 

@@ -8,12 +8,13 @@
 - Sensitive fields (e.g. connector secrets, MFA seeds) are encrypted at rest
   with Fernet (AES-128-CBC + HMAC).
 """
+
 from __future__ import annotations
 
 import hashlib
 import hmac
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pyotp
@@ -61,7 +62,7 @@ def create_access_token(
     expires_minutes: int | None = None,
     extra: dict[str, Any] | None = None,
 ) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expire = now + timedelta(minutes=expires_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload: dict[str, Any] = {
         "sub": subject,
