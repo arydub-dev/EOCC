@@ -10,12 +10,29 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from app.config import settings
 
+
+def _normalize_db_url(url: str) -> str:
+    """Ensure the SQLAlchemy URL uses the installed psycopg (v3) driver.
+
+    Managed hosts (Render, Heroku, Railway, …) hand out ``postgres://`` or
+    ``postgresql://`` URLs, which SQLAlchemy would route to psycopg2. Only
+    psycopg v3 is installed, so rewrite the scheme to ``postgresql+psycopg://``.
+    """
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://") :]
+    if url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url[len("postgresql://") :]
+    return url
+
+
+DATABASE_URL = _normalize_db_url(settings.DATABASE_URL)
+
 connect_args: dict[str, object] = {}
-if settings.DATABASE_URL.startswith("sqlite"):
+if DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    DATABASE_URL,
     pool_pre_ping=True,
     connect_args=connect_args,
     future=True,
